@@ -1634,12 +1634,17 @@ Redo:
     _exit(0);
 }
 
+static int (*rsa_finish)(RSA *rsa);
+
 static int priv_rsa_finish(RSA *rsa)
 {
     struct st_neverbleed_rsa_exdata_t *exdata;
     struct st_neverbleed_thread_data_t *thdata;
 
     get_privsep_data(rsa, &exdata, &thdata);
+
+    rsa_finish(rsa);
+
     if (exdata == NULL)
         return 1;
 
@@ -2144,6 +2149,8 @@ int neverbleed_init(neverbleed_t *nb, char *errbuf)
 #ifdef NEVERBLEED_OPAQUE_RSA_METHOD
         rsa_default_method = RSA_PKCS1_OpenSSL();
         rsa_method = RSA_meth_dup(rsa_default_method);
+
+        rsa_finish = RSA_meth_get_finish(rsa_method);
 
         RSA_meth_set1_name(rsa_method, "privsep RSA method");
         RSA_meth_set_priv_enc(rsa_method, priv_enc_proxy);
